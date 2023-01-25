@@ -14,8 +14,8 @@
 
 #define ESP01_RX_BUFF_SIZE         1024
 
-#define WIFI_SSID                  "MANCHI"//"Barcala"     // Setear Red Wi-Fi
-#define WIFI_PASSWORD              "32117917"//"b4rc4l4.2022" // Setear password
+#define WIFI_SSID                  "wifi"     // Setear Red Wi-Fi
+#define WIFI_PASSWORD              "password" // Setear password
 
 #define SERVER_IP      "192.168.1.78"//"10.0.22.142"
 #define SERVER_PORT     8082
