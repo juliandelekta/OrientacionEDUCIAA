@@ -1,12 +1,5 @@
-/*
- * wifi.c
- *
- *  Created on: 14 dic. 2022
- *      Author: Julian
- */
-#include "sapi.h"        // <= Biblioteca sAPI
-//#include "convert.h"
-#include <string.h>   // <= Biblioteca de manejo de Strings
+#include "sapi.h"
+#include <string.h>
 #include "wifi.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -353,87 +346,90 @@ bool_t esp01ShowWiFiNetworks( void ){
 
 bool_t esp01Init( uartMap_t uartForEsp, uartMap_t uartForDebug, uint32_t baudRate ){
 
-   bool_t retVal = FALSE;
+    bool_t retVal = FALSE;
 
-   uartEsp01 = uartForEsp;
-   uartDebug = uartForDebug;
+    uartEsp01 = uartForEsp;
+    uartDebug = uartForDebug;
 
-   // Initialize HW ------------------------------------------
+    // Initialize HW ------------------------------------------
 
-   // Inicializar UART_USB como salida de debug
-   debugPrintConfigUart( uartDebug, baudRate );
-   debugPrintlnString( ">>>> UART_USB configurada como salida de debug." );
+    // Inicializar UART_USB como salida de debug
+    debugPrintConfigUart( uartDebug, baudRate );
+    debugPrintlnString( ">>>> UART_USB configurada como salida de debug." );
 
-   // Inicializr otra UART donde se conecta el ESP01 como salida de consola
-   consolePrintConfigUart( uartEsp01, baudRate );
-   debugPrintlnString( ">>>> UART_ESP (donde se conecta el ESP01), \r\n>>>> configurada como salida de consola.\r\n" );
+    // Inicializr otra UART donde se conecta el ESP01 como salida de consola
+    consolePrintConfigUart( uartEsp01, baudRate );
+    debugPrintlnString( ">>>> UART_ESP (donde se conecta el ESP01), \r\n>>>> configurada como salida de consola.\r\n" );
 
-   // AT -----------------------------------------------------
+    // AT -----------------------------------------------------
 
-   // Chequear si se encuentra el modulo Wi-Fi enviandole "AT"
-   debugPrintlnString( ">>>> Chequear si se encuentra el modulo Wi-Fi.\r\n>>>>    Enviando \"AT\"..." );
-   consolePrintString( "AT\r\n" );
-   // No poner funciones entre el envio de comando y la espera de respuesta
-   retVal = waitForReceiveStringOrTimeoutBlocking( uartEsp01, "AT\r\n", 4, 500 );
-   if( retVal ){
-      debugPrintlnString( ">>>>    Modulo ESP01 Wi-Fi detectado.\r\n" );
-   } else{
-      debugPrintlnString( ">>>>    Error: Modulo ESP01 Wi-Fi No detectado!!\r\n" );
-      return retVal;
-   }
+    // Chequear si se encuentra el modulo Wi-Fi enviandole "AT"
+    debugPrintlnString( ">>>> Chequear si se encuentra el modulo Wi-Fi.\r\n>>>>    Enviando \"AT\"..." );
+    consolePrintString( "AT\r\n" );
+    // No poner funciones entre el envio de comando y la espera de respuesta
+    retVal = waitForReceiveStringOrTimeoutBlocking( uartEsp01, "AT\r\n", 4, 500 );
+    if( retVal ){
+        debugPrintlnString( ">>>>    Modulo ESP01 Wi-Fi detectado.\r\n" );
+    } else{
+        debugPrintlnString( ">>>>    Error: Modulo ESP01 Wi-Fi No detectado!!\r\n" );
+        return retVal;
+    }
 
-   // AT+CWLAP -----------------------------------------------
-   return esp01ShowWiFiNetworks();
+    // AT+CWLAP -----------------------------------------------
+    return esp01ShowWiFiNetworks();
 }
 
 static char result[100];
-void taskWiFi( void* taskParam ) {
-	// Inicializar UART_USB como salida de consola
-	debugPrintConfigUart( UART_DEBUG, UARTS_BAUD_RATE );
+void taskWiFi ( void* taskParam ) {
+    // Inicializar UART_USB como salida de consola
+    debugPrintConfigUart( UART_DEBUG, UARTS_BAUD_RATE );
 
-	if( !esp01Init( UART_ESP01, UART_DEBUG, UARTS_BAUD_RATE ) ){
-		while(1); // Como dio falso (error) me quedo en un bucle infinito
-	}
+    if ( !esp01Init( UART_ESP01, UART_DEBUG, UARTS_BAUD_RATE ) ) {
+        while(1); // Como dio falso (error) me quedo en un bucle infinito
+    }
 
-	if( !esp01ConnectToWifiAP( WIFI_SSID, WIFI_PASSWORD ) ){
-		while(1); // Como dio falso (error) me quedo en un bucle infinito
-	}
-    //consolePrintString("AT+CIPSTA=\"10.0.22.250\"\r\n");
-    consolePrintString("AT+CIPSTA=\"192.168.1.250\"\r\n");
-    vTaskDelay( 4000 / portTICK_RATE_MS ); // Periodo de 100ms
-	esp01CleanRxBuffer();
-	//consolePrintString( "AT+CIPPING=\"www.google.com\"\r\n");
-	consolePrintString( "AT+CIFSR\r\n");
-	receiveBytesUntilReceiveStringOrTimeoutBlocking(
-		   uartEsp01,
-		   "", 0,
-		   espResponseBuffer, &espResponseBufferSize,
-		   3000
-		);
+    if ( !esp01ConnectToWifiAP( WIFI_SSID, WIFI_PASSWORD ) ) {
+        while(1); // Como dio falso (error) me quedo en un bucle infinito
+    }
+
+    // Configuro la IP estática
+    consolePrintString("AT+CIPSTA=\"10.0.22.250\"\r\n");
+    vTaskDelay( 4000 / portTICK_RATE_MS );
+
+    esp01CleanRxBuffer();
+
+    //consolePrintString( "AT+CIPPING=\"www.google.com\"\r\n"); <-- Comando de PING
+
+    // Get Local Ip address
+    consolePrintString( "AT+CIFSR\r\n");
+    receiveBytesUntilReceiveStringOrTimeoutBlocking(
+        uartEsp01,
+        "", 0,
+        espResponseBuffer, &espResponseBufferSize,
+        3000
+    );
     debugPrintString( espResponseBuffer );
 
-	while( TRUE ) {
-		// Armo el dato a enviar, en este caso para grabar un dato en el canal de Thinspeak
-		      // Ejemplo: "GET /update?api_key=7E7IOJ276BSDLOBA&field1=66"
+    while(1) {
+        // Armo el dato a enviar en una trama TCP
 
-		tcpIpDataToSend[0] = 0; // Reseteo la cadena que guarda las otras agregando un caracter NULL al principio
+        tcpIpDataToSend[0] = 0; // Reseteo la cadena que guarda las otras agregando un caracter NULL al principio
 
-		strcat( tcpIpDataToSend, floatToString(qx,result, 4) );
-		strcat( tcpIpDataToSend, " " );
-		strcat( tcpIpDataToSend, floatToString(qy,result, 4) );
-		strcat( tcpIpDataToSend, " " );
-		strcat( tcpIpDataToSend, floatToString(qz,result, 4) );
-		strcat( tcpIpDataToSend, " " );
-		strcat( tcpIpDataToSend, floatToString(qw,result, 4) );
-		strcat( tcpIpDataToSend, "\r\n" );
-
+        strcat( tcpIpDataToSend, floatToString(qx,result, 4) );
+        strcat( tcpIpDataToSend, " " );
+        strcat( tcpIpDataToSend, floatToString(qy,result, 4) );
+        strcat( tcpIpDataToSend, " " );
+        strcat( tcpIpDataToSend, floatToString(qz,result, 4) );
+        strcat( tcpIpDataToSend, " " );
+        strcat( tcpIpDataToSend, floatToString(qw,result, 4) );
+        strcat( tcpIpDataToSend, "\r\n" );
 
 
-		// Envio los datos TCP/IP al Servidor de Thingpeak
-		// Ver en: https://thingspeak.com/channels/377497/
-		esp01SendTPCIPDataToServer( SERVER_IP, SERVER_PORT, tcpIpDataToSend, strlen( tcpIpDataToSend ) );
-		//debugPrintlnString(tcpIpDataToSend);
 
-		vTaskDelay( 300 / portTICK_RATE_MS ); // Periodo de 100ms
-	}
+        // Envio los datos TCP/IP al Servidor
+        esp01SendTPCIPDataToServer( SERVER_IP, SERVER_PORT, tcpIpDataToSend, strlen( tcpIpDataToSend ) );
+        //debugPrintlnString(tcpIpDataToSend);
+
+        vTaskDelay( 300 / portTICK_RATE_MS ); // Periodo de 300ms
+    }
 }

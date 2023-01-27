@@ -59,7 +59,7 @@ void setup() {
 
 void draw(){
     // Pinto el fondo de gris
-    background(40);
+    background(255);
     
     lights();
     

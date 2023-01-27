@@ -1,10 +1,3 @@
-/*
- * lcd.h
- *
- *  Created on: 12/12/2022
- *      Author: Barcala
- */
-
 #ifndef LCD_H_
 #define LCD_H_
 
@@ -20,4 +13,4 @@ void LCDsetRAW(float _ax, float _ay, float _az, float _gx, float _gy, float _gz)
 
 void LCDBlink();
 
-#endif /* LCD_H_ */
+#endif
