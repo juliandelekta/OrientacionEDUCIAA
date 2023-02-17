@@ -1,9 +1,9 @@
 import processing.net.*;
 
-// Servidor HTTP que recibe los POST del ESP8266
+// Servidor TCP que recibe las tramas del ESP8266
 Server myServer;
 
-// Representación interna del quaternion recibido por medio de HTTP
+// Representación interna del quaternion recibido por medio de TCP
 float qx = 0.0;
 float qy = 0.0;
 float qz = 0.0;
@@ -12,6 +12,7 @@ float qw = 1.0;
 // Matriz de rotación del canvas
 PMatrix3D rotationMatrix = new PMatrix3D();
 PShape car;
+float t = 1;
 
 // Esta rutina establece los datos de una matriz de rotación "out" según las coordenadas de un quaternion (x, y, z, w)
 void QuaternionToMatrix(PMatrix3D out, float x, float y, float z, float w) {
@@ -25,6 +26,29 @@ void QuaternionToMatrix(PMatrix3D out, float x, float y, float z, float w) {
       xz2 - wy2,           yz2 + wx2,           1.0 - (xsq2 + ysq2), 0.0,
       0.0,                 0.0,                 0.0,                 1.0
     );
+}
+
+void drawAxes(float size){
+    textAlign(CENTER);
+    textSize(28);
+    
+    //X  - red
+    stroke(192,0,0);
+    line(0,0,0,-size,0,0);
+    fill(192,0,0);
+    text("X", -size, 14, 0);
+    
+    //Y - green
+    stroke(0,192,0);
+    line(0,0,0,0,-size,0);
+    fill(0,192,0);
+    text("Y", 0, -size, 0);
+    
+    //Z - blue
+    stroke(0,0,192);
+    line(0,0,0,0,0,-size);
+    fill(0, 0, 192);
+    text("Z", 0, 0, -size);
 }
 
 void setup() {
@@ -42,7 +66,8 @@ void setup() {
     car.translate(-100, 0, 0);*/
     
     car = loadShape("Roadster.obj");
-    car.scale(40);
+    //car.scale(40);
+    car.scale(20);
     car.rotateX(-PI/2);
     //car.rotateY(1.35 * PI/4);
     car.rotateZ(1.35 * PI/4);
@@ -74,6 +99,7 @@ void draw(){
     // Me traslado al centro del canvas y aplico posteriormente la matriz de rotación
     translate(width/2, height/2);
     
+    
     // Version 1
      rotateY(PI);
      rotateX(-PI/2);
@@ -81,7 +107,7 @@ void draw(){
     //rotateY(PI);
     //rotateX(-PI/2);
     applyMatrix(rotationMatrix);
-    scale(1, 1, 1);
+    drawAxes(300);
     shape(car);
     
     
