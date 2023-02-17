@@ -66,20 +66,11 @@ void setup() {
     car.translate(-100, 0, 0);*/
     
     car = loadShape("Roadster.obj");
-    //car.scale(40);
     car.scale(20);
     car.rotateX(-PI/2);
-    //car.rotateY(1.35 * PI/4);
     car.rotateZ(1.35 * PI/4);
     car.setAmbient(0xff000000);
     car.setEmissive(0xff000000);
-    
-    // Version1
-    // car.rotateX(-PI/2);
-    // car.rotateZ(1.35 * PI/4);
-    
-    //car.setFill(0xff336699);
-    //car.setSpecular(0xff000000);
 }
 
 void draw(){
@@ -100,12 +91,8 @@ void draw(){
     translate(width/2, height/2);
     
     
-    // Version 1
      rotateY(PI);
      rotateX(-PI/2);
-    
-    //rotateY(PI);
-    //rotateX(-PI/2);
     applyMatrix(rotationMatrix);
     drawAxes(300);
     shape(car);
